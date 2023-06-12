@@ -61,3 +61,85 @@ MockHttpServletResponse:
     Forwarded URL = null
    Redirected URL = null
           Cookies = []
+          
+          
+Criamos o path /books em controller, agora execultando os tests passa com um 201 created...
+   
+import com.systempro.library.domain.dto.BookDTO;
+@RestController
+@RequestMapping(value = "/books")
+public class BookController {
+	
+	@PostMapping
+	@ResponseStatus(HttpStatus.CREATED)
+	public BookDTO create() {
+		return null;
+	}
+
+}
+
+package com.systempro.library.domain.dto;
+
+import java.io.Serializable;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Data
+public class BookDTO implements Serializable {
+	private static final long serialVersionUID = 1L;
+
+	private Long id;
+	private String title;
+	private String autor;
+	private String isbn;
+
+}
+
+apos criarmos estas novas class podemos execultar o test e neos resultará em um test ok retornado um 201 CREATED.
+
+veja o test execultado a baixo.
+   
+   
+   
+   MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /books
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Accept:"application/json", Content-Length:"4"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.systempro.library.controller.BookController
+           Method = com.systempro.library.controller.BookController#create()
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = []
+     Content type = null
+             Body = 
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
