@@ -143,3 +143,47 @@ MockHttpServletResponse:
     Forwarded URL = null
    Redirected URL = null
           Cookies = []
+          
+          
+          
+    após add dados mock no controller veja o retorno como ficou test execultado com sucesso!
+    
+    no body temos os dados retornando mesmo mockados
+    
+    MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /books
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Accept:"application/json", Content-Length:"4"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.systempro.library.controller.BookController
+           Method = com.systempro.library.controller.BookController#create()
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Content-Type:"application/json"]
+     Content type = application/json
+             Body = {"id":1,"title":"Meu Livro","autor":"Fernando","isbn":"123123"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+    
