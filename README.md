@@ -187,3 +187,89 @@ MockHttpServletResponse:
    Redirected URL = null
           Cookies = []
     
+    
+ agora efetuamos a criação do Book em domain 
+
+ @NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Data
+public class Book implements Serializable {
+	private static final long serialVersionUID = 1L;
+
+	private Long id;
+	private String title;
+	private String autor;
+	private String isbn;
+
+}
+ 
+ 
+ criamos uma interface de serviço 
+ 
+ public interface BookService {
+
+	Book save(Book any);
+
+}
+ 
+ refatoramos o nosso controller para trazer um BookDTO e não uma entidade;
+ 
+ @PostMapping
+	@ResponseStatus(HttpStatus.CREATED)
+	public BookDTO create(@RequestBody BookDTO request) {
+		Book entity = 
+				Book.builder()				
+				.autor(request.getAutor())
+				.title(request.getTitle())
+				.isbn(request.getIsbn())
+				.build();
+				
+		entity = service.save(entity);
+	  
+
+		return BookDTO.builder()	
+				.id(entity.getId())
+				.autor(entity.getAutor())
+				.title(entity.getTitle())
+				.isbn(entity.getIsbn())
+				.build();
+	  
+	}
+ 
+ 
+ refatoramos o nosso test para savar um BOOK atraves do json passado pelo BookDTO
+ 
+ 
+ @Test
+	@DisplayName("Post new book")
+	void createBookTest() throws Exception {
+
+		BookDTO bookDTO = BookDTO
+				.builder()
+				.autor("Fernando")
+				.title("Meu Livro")
+				.isbn("123123")
+				.build();
+
+		Book saveBook = Book.builder()
+				.id(1l)				
+				.autor("Fernando")
+				.title("Meu Livro")
+				.isbn("123123")
+				.build();
+		
+		BDDMockito.given(service.save(Mockito.any(Book.class))).willReturn(saveBook);
+		// metodo para gerar um json
+		String json = new ObjectMapper().writeValueAsString(bookDTO);
+
+		// scopo de post new book
+		MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.post(BOOL_API)
+				.contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).content(json);
+
+		mvc.perform(requestBuilder).andExpect(MockMvcResultMatchers.status().isCreated())
+				.andExpect(MockMvcResultMatchers.jsonPath("id").value(1L))
+				.andExpect(MockMvcResultMatchers.jsonPath("title").value(bookDTO.getTitle()))
+				.andExpect(MockMvcResultMatchers.jsonPath("autor").value(bookDTO.getAutor()))
+				.andExpect(MockMvcResultMatchers.jsonPath("isbn").value(bookDTO.getIsbn()));
+	}
