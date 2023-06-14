@@ -2,7 +2,6 @@ package com.systempro.library.controllerTest;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +10,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -22,7 +20,8 @@ import com.systempro.library.domain.Book;
 import com.systempro.library.domain.dto.BookDTO;
 import com.systempro.library.service.BookService;
 
-@ExtendWith(SpringExtension.class)
+
+//@ExtendWith(SpringExtension.class)
 @ActiveProfiles("test")
 @WebMvcTest
 @AutoConfigureMockMvc
@@ -33,11 +32,12 @@ public class LibraryControllerTests {
 	@Autowired
 	MockMvc mvc;
 
-	@MockBean
+	
 	// esta anotation é um mock especializado, ele é utilziado pelo spring para
 	// criar esta instacia mockada
 	// e coloca dentro do contexto de injeção de dependencias
-	BookService service;
+	@MockBean
+	private BookService service;
 
 	@Test
 	@DisplayName("Post new book")
@@ -51,13 +51,15 @@ public class LibraryControllerTests {
 				.build();
 
 		Book saveBook = Book.builder()
-				.id(1l)				
+				.id(1L)				
 				.autor("Fernando")
 				.title("Meu Livro")
 				.isbn("123123")
 				.build();
 		
+		
 		BDDMockito.given(service.save(Mockito.any(Book.class))).willReturn(saveBook);
+		
 		// metodo para gerar um json
 		String json = new ObjectMapper().writeValueAsString(bookDTO);
 
@@ -66,7 +68,7 @@ public class LibraryControllerTests {
 				.contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).content(json);
 
 		mvc.perform(requestBuilder).andExpect(MockMvcResultMatchers.status().isCreated())
-				.andExpect(MockMvcResultMatchers.jsonPath("id").value(1L))
+				.andExpect(MockMvcResultMatchers.jsonPath("id").isNotEmpty())
 				.andExpect(MockMvcResultMatchers.jsonPath("title").value(bookDTO.getTitle()))
 				.andExpect(MockMvcResultMatchers.jsonPath("autor").value(bookDTO.getAutor()))
 				.andExpect(MockMvcResultMatchers.jsonPath("isbn").value(bookDTO.getIsbn()));

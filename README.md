@@ -273,3 +273,293 @@ public class Book implements Serializable {
 				.andExpect(MockMvcResultMatchers.jsonPath("autor").value(bookDTO.getAutor()))
 				.andExpect(MockMvcResultMatchers.jsonPath("isbn").value(bookDTO.getIsbn()));
 	}
+	
+	neste proximo commit criamos o service, repository e service/imp
+	
+	para testar as transações de banco de dados, e não passar mais dados mockados no controller
+	
+	veja as criações agora e analise o commit.
+	
+	
+	
+package com.systempro.library.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.systempro.library.domain.Book;
+
+
+public interface BookRepository extends JpaRepository<Book, Long>{
+
+}
+	
+package com.systempro.library.service;
+
+import com.systempro.library.domain.Book;
+
+public interface BookService {
+	Book save(Book any);
+
+}
+
+package com.systempro.library.service.imp;
+
+import org.springframework.stereotype.Service;
+
+import com.systempro.library.domain.Book;
+import com.systempro.library.repository.BookRepository;
+import com.systempro.library.service.BookService;
+
+@Service
+public class BookServiceImpl implements BookService {
+
+	private BookRepository repository;
+
+	public BookServiceImpl(BookRepository repository) {
+		this.repository = repository;
+	}
+
+	@Override
+	public Book save(Book book) {
+		return repository.save(book);
+	}
+
+}
+
+
+agora nosso controller esta assim 
+
+
+package com.systempro.library.controller;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.systempro.library.domain.Book;
+import com.systempro.library.domain.dto.BookDTO;
+import com.systempro.library.service.BookService;
+
+@RestController
+@RequestMapping(value = "/books")
+public class BookController {
+
+	private final BookService service;
+	private final ModelMapper modelMapper;
+	
+	public BookController(BookService service,  ModelMapper modelMapper) {
+		this.modelMapper = modelMapper;
+		this.service = service;
+	}
+
+	@PostMapping
+	@ResponseStatus(HttpStatus.CREATED)
+	public BookDTO create(@RequestBody BookDTO request) {
+		Book entity = modelMapper.map(request, Book.class);
+				
+				
+		entity = service.save(entity);
+	  
+
+		return modelMapper.map(entity, BookDTO.class);
+	  
+	}
+
+}
+
+
+
+criamos este servicetest para testar se de fato estamos tendo o efeito necessário
+
+package com.systempro.library.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import com.systempro.library.domain.Book;
+import com.systempro.library.repository.BookRepository;
+import com.systempro.library.service.imp.BookServiceImpl;
+
+@ExtendWith(SpringExtension.class)
+@ActiveProfiles("test")
+public class BookServiceTests {
+
+	private BookService service;
+
+	@MockBean
+	BookRepository repository;
+
+	public BookServiceTests(BookService service) {
+		this.service = service;
+	}
+
+	@BeforeEach
+	public void setUp() {
+		this.service = new BookServiceImpl(repository);
+	}
+
+	@Test
+	public void saveBookTests() {
+
+		// cenário
+	
+		Book book = Book.builder().autor("Fernando").title("Meu Livro").isbn("123123").build();
+
+		Mockito.when(repository.save(book))
+				.thenReturn(Book.builder().id(1L).autor("Fernando").title("Meu Livro").isbn("123123").build());
+		
+		// execução
+		
+		Book savedBook = service.save(book);
+
+		// verificação 
+		assertThat(savedBook.getId()).isEqualTo(1L);
+		assertThat(savedBook.getAutor()).isEqualTo("Fernando");
+		assertThat(savedBook.getTitle()).isEqualTo("Meu Livro");
+		assertThat(savedBook.getIsbn()).isEqualTo("123123");
+
+	}
+}
+
+
+nosso controllerTest ficou desta forma observe as mudanças no commit
+
+package com.systempro.library.controllerTest;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.BDDMockito;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.systempro.library.domain.Book;
+import com.systempro.library.domain.dto.BookDTO;
+import com.systempro.library.service.BookService;
+
+
+//@ExtendWith(SpringExtension.class)
+@ActiveProfiles("test")
+@WebMvcTest
+@AutoConfigureMockMvc
+public class LibraryControllerTests {
+
+	static String BOOL_API = "/books";
+
+	@Autowired
+	MockMvc mvc;
+
+	
+	// esta anotation é um mock especializado, ele é utilziado pelo spring para
+	// criar esta instacia mockada
+	// e coloca dentro do contexto de injeção de dependencias
+	@MockBean
+	private BookService service;
+
+	@Test
+	@DisplayName("Post new book")
+	void createBookTest() throws Exception {
+
+		BookDTO bookDTO = BookDTO
+				.builder()
+				.autor("Fernando")
+				.title("Meu Livro")
+				.isbn("123123")
+				.build();
+
+		Book saveBook = Book.builder()
+				.id(1L)				
+				.autor("Fernando")
+				.title("Meu Livro")
+				.isbn("123123")
+				.build();
+		
+		
+		BDDMockito.given(service.save(Mockito.any(Book.class))).willReturn(saveBook);
+		
+		// metodo para gerar um json
+		String json = new ObjectMapper().writeValueAsString(bookDTO);
+
+		// scopo de post new book
+		MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.post(BOOL_API)
+				.contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).content(json);
+
+		mvc.perform(requestBuilder).andExpect(MockMvcResultMatchers.status().isCreated())
+				.andExpect(MockMvcResultMatchers.jsonPath("id").isNotEmpty())
+				.andExpect(MockMvcResultMatchers.jsonPath("title").value(bookDTO.getTitle()))
+				.andExpect(MockMvcResultMatchers.jsonPath("autor").value(bookDTO.getAutor()))
+				.andExpect(MockMvcResultMatchers.jsonPath("isbn").value(bookDTO.getIsbn()));
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
